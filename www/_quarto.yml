@@ -1,0 +1,25 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - index.qmd
+
+website:
+  title: "Real Good APIs"
+  site-url: https://api.realgoodresearch.com
+  navbar:
+    title: "Real Good APIs"
+    background: black
+    foreground: white
+    right:
+      - href: https://realgoodresearch.com
+        text: Home
+
+format:
+  html:
+    theme:
+      - cosmo
+      - custom-theme.scss
+    toc: false
+    page-layout: full
+    smooth-scroll: true

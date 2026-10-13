@@ -1,0 +1,115 @@
+/*-- scss:defaults --*/
+
+@import url("https://fonts.googleapis.com/css2?family=Mulish:wght@300;700;900&family=Roboto:wght@300;400;700&display=swap");
+
+$white: #ffffff;
+$black: #000000;
+$cream: #f6f3ec;
+$border-color: #e7eaed;
+$text-main: #1a1a1a;
+$text-muted: #66727b;
+$accent-blue: #2f84c6;
+$accent-blue-dark: #226ca4;
+
+$body-bg: $white;
+$body-color: $text-main;
+$link-color: $accent-blue;
+$font-family-sans-serif: "Roboto", sans-serif;
+$headings-font-family: "Mulish", sans-serif;
+$navbar-bg: $black;
+$navbar-fg: $white;
+$navbar-hl: $accent-blue;
+
+/*-- scss:rules --*/
+
+.navbar {
+  min-height: 72px;
+  padding: 0.8rem 0;
+  font-family: "Mulish", sans-serif;
+  font-weight: 700;
+}
+
+h1,
+h2,
+.title {
+  font-family: "Mulish", sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: $black;
+}
+
+.quarto-title-block .title {
+  font-size: clamp(2.8rem, 7vw, 5.5rem);
+  line-height: 0.95;
+}
+
+.quarto-title-block .subtitle {
+  margin-top: 1rem;
+  color: $text-muted;
+  font-size: 1.25rem;
+}
+
+main.content {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 3.5rem 22px 5rem;
+}
+
+.api-intro {
+  max-width: 42rem;
+  margin-bottom: 2rem;
+  color: $text-muted;
+  font-size: 1.15rem;
+  line-height: 1.75;
+}
+
+.api-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1.5rem;
+}
+
+.api-card {
+  padding: 2rem;
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: 6px;
+}
+
+.api-card h2 {
+  margin: 0.5rem 0 1rem;
+  font-size: 2rem;
+}
+
+.api-card p {
+  color: $text-muted;
+  line-height: 1.7;
+}
+
+.api-label {
+  color: $text-muted;
+  font-family: "Mulish", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.api-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 46px;
+  margin-top: 0.5rem;
+  padding: 0 18px;
+  color: $white;
+  background: $black;
+  border-radius: 999px;
+  font-family: "Mulish", sans-serif;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.api-button:hover,
+.api-button:focus {
+  color: $white;
+  background: #2b2b2b;
+}

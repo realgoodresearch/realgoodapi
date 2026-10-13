@@ -23,9 +23,11 @@ https://api.realgoodresearch.com/socialwatcher/v1/query
 ## Files
 
 - `deploy.sh` installs the required Ubuntu packages.
+- `www/` contains the Quarto source for the API landing page.
 - `nginx/api.realgoodresearch.com.initial.conf` bootstraps HTTP for certificate issuance.
 - `nginx/api.realgoodresearch.com.conf` is the production HTTPS reverse proxy.
 - `wireguard/lightsail-wg0.conf` is the restricted Lightsail VPN client template.
+- `www/_site/` contains the rendered site deployed by Nginx.
 - `env.example` records the deployment values but is not read automatically.
 
 ## 1. Collect the VPN details
@@ -293,9 +295,22 @@ set $serenity_ip 192.168.50.5;
 ```
 
 If Serenity's reserved LAN address changes, update this one line before copying
-the file. Install and validate the production configuration:
+the file.
+
+Render the landing page on a development machine with Quarto installed whenever
+the files under `www/` change:
 
 ```bash
+quarto render www
+```
+
+This writes the deployable site to `www/_site/`. Commit the source and rendered output
+so Quarto is not required on the small Lightsail instance. Install the landing
+page and production configuration, then validate them:
+
+```bash
+sudo install -d -m 755 /var/www/html
+sudo cp -a www/_site/. /var/www/html/
 sudo install -m 644 nginx/api.realgoodresearch.com.conf /etc/nginx/sites-available/api.realgoodresearch.com
 sudo nginx -t
 sudo systemctl reload nginx
@@ -306,6 +321,7 @@ sudo systemctl reload nginx
 Test Nginx itself:
 
 ```bash
+curl --fail https://api.realgoodresearch.com/
 curl --fail https://api.realgoodresearch.com/livez
 ```
 

@@ -11,6 +11,9 @@
 # Logs
 *.log
 
+# Quarto local cache
+.quarto/
+
 # OS / Editor artifacts
 .DS_Store
 *.swp
