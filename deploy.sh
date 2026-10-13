@@ -27,6 +27,7 @@ apt-get install --yes --no-install-recommends \
     ca-certificates \
     certbot \
     curl \
+    netcat-openbsd \
     nginx \
     python3-certbot-nginx \
     ufw \

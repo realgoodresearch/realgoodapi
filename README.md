@@ -13,11 +13,14 @@ Serenity (192.168.50.5)
     -> SocialWatcher container :8000
 ```
 
-The initial route is:
+The current proxy preserves every API path, including:
 
 ```text
 https://api.realgoodresearch.com/socialwatcher/v1/query
     -> http://192.168.50.5:8000/socialwatcher/v1/query
+
+https://api.realgoodresearch.com/social_media_audience/list_collections
+    -> http://192.168.50.5:8000/social_media_audience/list_collections
 ```
 
 ## Files
@@ -97,12 +100,12 @@ sudo ./deploy.sh
 
 ## 5. Create the Lightsail WireGuard identity
 
-Generate the key pair on Lightsail. Never copy the private key into this
-repository:
+Generate the key pair and a unique preshared key on Lightsail. Never copy either
+secret into this repository:
 
 ```bash
 sudo install -d -m 700 /etc/wireguard
-sudo sh -c 'umask 077; wg genkey > /etc/wireguard/lightsail-private.key; wg pubkey < /etc/wireguard/lightsail-private.key > /etc/wireguard/lightsail-public.key'
+sudo sh -c 'umask 077; wg genkey > /etc/wireguard/lightsail-private.key; wg pubkey < /etc/wireguard/lightsail-private.key > /etc/wireguard/lightsail-public.key; wg genpsk > /etc/wireguard/lightsail-preshared.key'
 sudo cat /etc/wireguard/lightsail-public.key
 ```
 
@@ -116,12 +119,51 @@ Add a peer to the existing WireGuard server using:
 [Peer]
 # Lightsail reverse proxy
 PublicKey = LIGHTSAIL_PUBLIC_KEY
+PresharedKey = LIGHTSAIL_PRESHARED_KEY
 AllowedIPs = LIGHTSAIL_VPN_ADDRESS_WITHOUT_PREFIX/32
 ```
 
-Use the VPN server's normal configuration process to apply the peer. Do not
-replace or restart unrelated VPN configuration if the server supports a live
-reload.
+Transfer the value from `/etc/wireguard/lightsail-preshared.key` to the VPN
+server through the same secure administrative channel used for other client
+preshared keys.
+
+After saving `/etc/wireguard/wg0.conf` on the VPN server, apply it without
+interrupting existing clients:
+
+```bash
+sudo bash -c 'wg syncconf wg0 <(wg-quick strip wg0)'
+sudo wg show wg0
+```
+
+### Restrict the Lightsail peer on the VPN server
+
+The `AllowedIPs` setting on Lightsail is only a routing preference; an attacker
+with root access could change it. The VPN server must enforce the boundary.
+
+Use UFW on the VPN server. Replace `LIGHTSAIL_VPN_IP` with the peer address
+without its prefix and `wg0` if the server uses a different WireGuard interface.
+Add the broad deny first, then prepend the specific allow above it:
+
+```bash
+sudo ufw route prepend deny in on wg0 from LIGHTSAIL_VPN_IP to any comment 'Block Lightsail from LAN'
+sudo ufw route prepend allow in on wg0 proto tcp from LIGHTSAIL_VPN_IP to 192.168.50.5 port 8000 comment 'Lightsail to SocialWatcher'
+sudo ufw prepend deny in on wg0 from LIGHTSAIL_VPN_IP to any comment 'Block Lightsail from VPN server'
+sudo ufw reload
+sudo ufw status numbered
+```
+
+UFW persists these rules automatically. In its routed rules, the SocialWatcher
+allow must appear before the broader Lightsail deny. The resulting policy is:
+
+```text
+allow Lightsail VPN IP -> 192.168.50.5 TCP 8000
+drop  Lightsail VPN IP -> every other forwarded destination and port
+drop  Lightsail VPN IP -> services on the VPN server itself
+```
+
+These rules must also appear before any existing general rule that allows VPN
+clients onto the LAN. Inspect `sudo ufw status numbered` and use `ufw delete
+RULE_NUMBER` followed by the `prepend` commands again if ordering is wrong.
 
 ## 7. Configure WireGuard on Lightsail
 
@@ -141,6 +183,7 @@ SaveConfig = false
 
 [Peer]
 PublicKey = VPN_SERVER_PUBLIC_KEY
+PresharedKey = LIGHTSAIL_PRESHARED_KEY
 Endpoint = VPN_SERVER_PUBLIC_HOST_OR_IP:VPN_SERVER_PORT
 AllowedIPs = 192.168.50.5/32
 PersistentKeepalive = 25
@@ -150,6 +193,7 @@ Read the private key for pasting into that file, then clear it from the terminal
 
 ```bash
 sudo cat /etc/wireguard/lightsail-private.key
+sudo cat /etc/wireguard/lightsail-preshared.key
 clear
 ```
 
@@ -172,9 +216,23 @@ Do not continue until the route uses `wg0`, `wg show` reports a recent handshake
 and the API responds. An application-level `4xx` response can still prove the
 network path works if the endpoint requires a request body or authentication.
 
-## 8. Enable the host firewall
+Also verify from Lightsail that another Serenity port and another LAN host are
+blocked. Choose a LAN address that is online and a Serenity port known to be
+open locally:
 
-Allow SSH before enabling UFW:
+```bash
+nc -zvw3 192.168.50.5 BLOCKED_PORT
+nc -zvw3 ANOTHER_LAN_IP OPEN_PORT
+```
+
+Both commands must fail. If either connects, stop and correct the VPN server's
+forwarding policy before exposing the public API.
+
+## 8. Enable the Lightsail instance firewall
+
+Inbound access is usually managed in the instance's **Networking** settings in
+the Lightsail console, as configured in step 2. UFW is optional instance-level
+defence in depth. If you use it, allow SSH before enabling it:
 
 ```bash
 sudo ufw allow OpenSSH
@@ -188,6 +246,12 @@ sudo ufw status verbose
 WireGuard requires no inbound UFW rule on Lightsail for this client setup.
 
 ## 9. Bootstrap Nginx over HTTP
+
+“Bootstrap” means starting Nginx with a temporary HTTP-only configuration. The
+production configuration cannot start yet because it refers to TLS certificate
+files that do not exist until Certbot creates them. This temporary site lets
+Let's Encrypt reach its validation challenge over port 80. Step 11 replaces it
+with the production HTTPS proxy after the certificate has been issued.
 
 Install the temporary configuration and disable the default site:
 
@@ -254,8 +318,8 @@ Test SocialWatcher using a valid request for the API:
 curl --verbose https://api.realgoodresearch.com/socialwatcher/v1/query
 ```
 
-The public request path is preserved exactly when Nginx sends it to port 8000
-on Serenity.
+Every public API request path is preserved exactly when Nginx sends it to port
+8000 on Serenity. The exact `/livez` and `/healthz` locations remain reserved.
 
 `/healthz` is forwarded to `http://192.168.50.5:8000/healthz`. It will succeed
 only after SocialWatcher implements that endpoint:
