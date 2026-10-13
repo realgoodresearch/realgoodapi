@@ -363,3 +363,38 @@ port publishing, or the API service rather than the public Nginx configuration.
 Publish the new API on another port on Serenity, add a dedicated Nginx `location`
 for its public path prefix, and reuse `$serenity_ip`. Always run `sudo nginx -t`
 before reloading Nginx.
+
+## Updating the API landing page
+
+Edit the Quarto source under `www/`, then render and publish it from the
+development machine:
+
+```bash
+quarto render www
+git add .
+git commit -m "Update API landing page"
+git push
+```
+
+On Lightsail, pull and install the rendered site:
+
+```bash
+cd ~/realgoodapi
+git pull
+sudo cp -a www/_site/. /var/www/html/
+```
+
+Content and style changes do not require an Nginx reload. If the Nginx
+configuration also changed, install and validate it before reloading:
+
+```bash
+sudo install -m 644 nginx/api.realgoodresearch.com.conf /etc/nginx/sites-available/api.realgoodresearch.com
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Verify the deployed landing page:
+
+```bash
+curl --fail https://api.realgoodresearch.com/
+```
