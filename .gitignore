@@ -1,0 +1,17 @@
+# Environment & Secrets
+.env
+.env.local
+*.env
+
+# WireGuard key files
+*.key
+*.priv
+*.pub
+
+# Logs
+*.log
+
+# OS / Editor artifacts
+.DS_Store
+*.swp
+*~
