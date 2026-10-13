@@ -13,14 +13,11 @@ Serenity (192.168.50.5)
     -> SocialWatcher container :8000
 ```
 
-The current proxy preserves every API path, including:
+The SocialWatcher route preserves the complete API path:
 
 ```text
 https://api.realgoodresearch.com/socialwatcher/v1/query
     -> http://192.168.50.5:8000/socialwatcher/v1/query
-
-https://api.realgoodresearch.com/social_media_audience/list_collections
-    -> http://192.168.50.5:8000/social_media_audience/list_collections
 ```
 
 ## Files
@@ -318,8 +315,9 @@ Test SocialWatcher using a valid request for the API:
 curl --verbose https://api.realgoodresearch.com/socialwatcher/v1/query
 ```
 
-Every public API request path is preserved exactly when Nginx sends it to port
-8000 on Serenity. The exact `/livez` and `/healthz` locations remain reserved.
+Every `/socialwatcher/` request path is preserved exactly when Nginx sends it
+to port 8000 on Serenity. Other unconfigured paths return `404`. The exact
+`/livez` and `/healthz` locations remain reserved.
 
 `/healthz` is forwarded to `http://192.168.50.5:8000/healthz`. It will succeed
 only after SocialWatcher implements that endpoint:
