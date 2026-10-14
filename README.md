@@ -91,10 +91,19 @@ git clone REPOSITORY_URL realgoodapi
 cd realgoodapi
 ```
 
-Install the system packages:
+Install the system packages. The script also creates a persistent 1 GB swapfile
+and enables daily unattended security updates without automatic reboots:
 
 ```bash
 sudo ./deploy.sh
+```
+
+Verify both after installation:
+
+```bash
+swapon --show
+systemctl status unattended-upgrades --no-pager
+sudo unattended-upgrade --dry-run --debug
 ```
 
 ## 5. Create the Lightsail WireGuard identity
